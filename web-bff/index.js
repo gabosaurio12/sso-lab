@@ -1,13 +1,13 @@
 import express from "express";
 import session from "cookie-session";
 import dotenv from "dotenv";
-import * as OIDC from "openid-client";
+import { Issuer, generators } from "openid-client";
 
 dotenv.config();
 
-const {Issuer, generators } = OIDC;
-
 const app = express();
+
+app.set("trust proxy", 1);
 
 app.use(
   session({
@@ -16,6 +16,10 @@ app.use(
     maxAge: 24 * 60 * 60 * 1000,
   })
 );
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 
 let issuer;
 let client;
