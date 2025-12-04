@@ -1,9 +1,11 @@
-import express from "express";
+import express, { response } from "express";
 import expressSession from "express-session";
 import dotenv from "dotenv";
 import { Issuer, generators } from "openid-client";
 import https from "https";
 import fs from "fs";
+
+const router = express.Router();
 
 const sslOptions = {
 		key: fs.readFileSync("./ssl/key.pem"),
@@ -66,21 +68,26 @@ app.get("/login", requireClient, (req, res) => {
   const code_verifier = generators.codeVerifier();
   const code_challenge = generators.codeChallenge(code_verifier);
 
-  // guarda el code_verifier en la sesión
+  const state = generators.state();
+  const nonce = generators.nonce();
+
   req.session.code_verifier = code_verifier;
+  req.session.oidc_state = state;
+  req.session.oidc_nonce = nonce;
 
   const protocol = req.protocol;
   const host = req.get("host");
   const redirectUri = `${protocol}://${host}/callback`;
   console.log("LOGIN redirectUri=", redirectUri);
-  console.log("LOGIN session (server-side) =", req.session);
-
 
   const url = client.authorizationUrl({
+    response_type: "code",
     scope: "openid profile email",
     code_challenge,
     code_challenge_method: "S256",
     redirect_uri: redirectUri,
+    state,
+    nonce,
   });
 
   res.on("finish", () => {
@@ -100,52 +107,31 @@ app.get("/callback", requireClient, async (req, res) => {
     const redirectUri = `${protocol}://${host}/callback`;
 
     const code_verifier = req.session.code_verifier;
+    const state = req.session.oidc_state;
+    const nonce = req.session.oidc_nonce;
+
     if (!code_verifier) return res.status(400).send("Missing code_verifier in session");
 
     const tokenSet = await client.callback(redirectUri, params, {
       code_verifier,
+      state,
+      nonce,
     });
 
-    // guarda tokens en la sesión (ten en cuenta tamaño y seguridad para el lab)
     req.session.tokens = {
       id_token: tokenSet.id_token,
       access_token: tokenSet.access_token,
       refresh_token: tokenSet.refresh_token,
     };
 
-    // borrar el code_verifier (solo se usa una vez)
     delete req.session.code_verifier;
+    delete req.session.oidc_state;
+    delete req.session.oidc_nonce;
 
     res.redirect("/perfil");
   } catch (err) {
     console.error("Error en /callback:", err);
     res.status(500).send("Callback error: " + (err.message || err.toString()));
-  }
-});
-
-app.get("/perfil", requireClient, async (req, res) => {
-  try {
-    if (!req.session.tokens || !req.session.tokens.access_token) {
-      return res.status(401).send("No estás autenticado. Ve a /login");
-    }
-
-    // usa userinfo si el issuer lo soporta
-    let userinfo = {};
-    try {
-      userinfo = await client.userinfo(req.session.tokens.access_token);
-    } catch (e) {
-      // si falla userinfo, igual mostramos los claims del id_token (decodificar si quieres)
-      console.warn("No se pudo obtener userinfo:", e.message || e);
-    }
-
-    res.json({
-      id_token: req.session.tokens.id_token,
-      access_token: req.session.tokens.access_token,
-      userinfo,
-    });
-  } catch (err) {
-    console.error("Error en /perfil:", err);
-    res.status(500).send("Error interno");
   }
 });
 
