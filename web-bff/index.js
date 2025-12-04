@@ -116,14 +116,14 @@ app.get("/callback", requireClient, async (req, res) => {
     // borrar el code_verifier (solo se usa una vez)
     delete req.session.code_verifier;
 
-    res.redirect("/me");
+    res.redirect("/perfil");
   } catch (err) {
     console.error("Error en /callback:", err);
     res.status(500).send("Callback error: " + (err.message || err.toString()));
   }
 });
 
-app.get("/me", requireClient, async (req, res) => {
+app.get("/perfil", requireClient, async (req, res) => {
   try {
     if (!req.session.tokens || !req.session.tokens.access_token) {
       return res.status(401).send("No estás autenticado. Ve a /login");
@@ -144,7 +144,7 @@ app.get("/me", requireClient, async (req, res) => {
       userinfo,
     });
   } catch (err) {
-    console.error("Error en /me:", err);
+    console.error("Error en /perfil:", err);
     res.status(500).send("Error interno");
   }
 });
