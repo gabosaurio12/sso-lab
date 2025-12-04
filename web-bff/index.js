@@ -1,4 +1,3 @@
-// web-bff/index.js
 import express from "express";
 import session from "cookie-session";
 import dotenv from "dotenv";
