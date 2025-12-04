@@ -2,6 +2,14 @@ import express from "express";
 import session from "cookie-session";
 import dotenv from "dotenv";
 import { Issuer, generators } from "openid-client";
+import https from "https";
+import fs from "fs";
+
+const sslOptions = {
+		key: fs.readFileSync("./ssl/key.pem"),
+		cert: fs.readFileSync("./ssl/cert.pem"),
+};
+
 
 dotenv.config();
 
@@ -130,7 +138,7 @@ app.get("/logout", (req, res) => {
 const PORT = Number(process.env.PORT || 3000);
 
 initOidcClient().then(() => {
-  app.listen(PORT, () => {
-    console.log(`BFF escuchando en http://${process.env.HOST}:${PORT}`);
-  });
+		https.createServer(sslOptions, app).listen(PORT, () => {
+				console.log('HTTPS BFF ready at https://${process.env.HOST}:${PORT}');
+		});
 });
