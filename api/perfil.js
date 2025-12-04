@@ -4,7 +4,7 @@ const router = express.Router();
 
 router.get("/perfil", async (req, res) => {
     try {
-        if (!req.cliet) {
+        if (!req.client) {
             return res.status(500).json({ error: "OIDC client not initialized" });
         }
 
