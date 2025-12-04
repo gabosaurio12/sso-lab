@@ -10,7 +10,6 @@ const sslOptions = {
 		cert: fs.readFileSync("./ssl/cert.pem"),
 };
 
-
 dotenv.config();
 
 const app = express();
@@ -63,7 +62,7 @@ app.get("/login", requireClient, (req, res) => {
   // guarda el code_verifier en la sesión
   req.session.code_verifier = code_verifier;
 
-  const redirectUri = `http://${process.env.HOST}:${process.env.PORT}/callback`;
+  const redirectUri = `https://${process.env.HOST}:${process.env.PORT}/callback`;
 
   const url = client.authorizationUrl({
     scope: "openid profile email",
@@ -79,7 +78,7 @@ app.get("/login", requireClient, (req, res) => {
 app.get("/callback", requireClient, async (req, res) => {
   try {
     const params = client.callbackParams(req);
-    const redirectUri = `http://${process.env.HOST}:${process.env.PORT}/callback`;
+    const redirectUri = `https://${process.env.HOST}:${process.env.PORT}/callback`;
     const code_verifier = req.session.code_verifier;
     if (!code_verifier) return res.status(400).send("Missing code_verifier in session");
 
@@ -138,7 +137,7 @@ app.get("/logout", (req, res) => {
 const PORT = Number(process.env.PORT || 3000);
 
 initOidcClient().then(() => {
-		https.createServer(sslOptions, app).listen(PORT, () => {
-				console.log('HTTPS BFF ready at https://${process.env.HOST}:${PORT}');
-		});
+    https.createServer(sslOptions, app).listen(PORT, () => {
+            console.log(`HTTPS BFF ready at https://${process.env.HOST}:${PORT}`);
+    });
 });
