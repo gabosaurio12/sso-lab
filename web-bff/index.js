@@ -127,7 +127,7 @@ app.get("/callback", requireClient, async (req, res) => {
     delete req.session.oidc_state;
     delete req.session.oidc_nonce;
 
-    res.redirect("/perfil");
+    res.redirect("/api/perfil");
   } catch (err) {
     console.error("Error en /callback:", err);
     res.status(500).send("Callback error: " + (err.message || err.toString()));
@@ -139,7 +139,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use("/api", perfilRouter);
+app.use("/api/perfil", perfilRouter);
 
 app.get("/logout", (req, res) => {
   req.session = null;
