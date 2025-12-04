@@ -22,7 +22,8 @@ app.use(
     keys: [process.env.SESSION_SECRET || "secret"],
     maxAge: 24 * 60 * 60 * 1000,
     secure: false,
-    sameSite: "lax",
+    sameSite: "none",
+    httpOnly: false,
   })
 );
 
@@ -139,7 +140,7 @@ app.get("/logout", (req, res) => {
 const PORT = Number(process.env.PORT || 3000);
 
 initOidcClient().then(() => {
-    https.createServer(sslOptions, app).listen(PORT, () => {
+    https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
             console.log(`HTTPS BFF ready at https://${process.env.HOST}:${PORT}`);
     });
 });
