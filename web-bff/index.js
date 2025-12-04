@@ -35,6 +35,8 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.set("views", "./views");
+app.set("view engine", "ejs");
 
 let issuer;
 let client;

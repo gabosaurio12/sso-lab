@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Perfil</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 2rem; background:#f6f8fa; color:#111; }
+    .card { background: #fff; border-radius:8px; padding:1.25rem; box-shadow:0 6px 18px rgba(17,17,17,0.08); max-width:720px; margin:0 auto; }
+    pre { background:#f3f4f6; padding:1rem; border-radius:6px; overflow:auto; }
+    a.btn { display:inline-block; margin-top:1rem; padding:.5rem .75rem; background:#0366d6; color:#fff; border-radius:6px; text-decoration:none;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Perfil</h1>
+    <p><strong>Subject (sub):</strong> <%= user.sub %></p>
+    <p><strong>Nombre:</strong> <%= user.name || user.preferred_username || "-" %></p>
+    <p><strong>Email:</strong> <%= user.email || "-" %></p>
+
+    <h2>Claims</h2>
+    <pre><%= JSON.stringify(user, null, 2) %></pre>
+
+    <a class="btn" href="/logout">Cerrar sesión</a>
+  </div>
+</body>
+</html>
