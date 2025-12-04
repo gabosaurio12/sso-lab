@@ -70,6 +70,8 @@ app.get("/login", requireClient, (req, res) => {
   const host = req.get("host");
   const redirectUri = `${protocol}://${host}/callback`;
   console.log("LOGIN redirectUri=", redirectUri);
+  console.log("LOGIN session (server-side) =", req.session);
+
 
   const url = client.authorizationUrl({
     scope: "openid profile email",
@@ -78,7 +80,10 @@ app.get("/login", requireClient, (req, res) => {
     redirect_uri: redirectUri,
   });
 
-  res.redirect(url);
+  res.set("Location", url);
+  const setCookie = res.getHeader("Set-Cookie");
+  console.log("LOGIN will send Set-Cookie header:", setCookie);
+  res.status(302).end();
 });
 
 app.get("/callback", requireClient, async (req, res) => {
