@@ -134,7 +134,7 @@ app.get("/callback", requireClient, async (req, res) => {
   }
 });
 
-app.use((rqu, res, enxt) => {
+app.use((req, res, next) => {
     req.client = client;
     next();
 });
