@@ -14,13 +14,15 @@ dotenv.config();
 
 const app = express();
 
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 app.use(
   session({
     name: "session",
     keys: [process.env.SESSION_SECRET || "secret"],
     maxAge: 24 * 60 * 60 * 1000,
+    secure: false,
+    sameSite: "lax",
   })
 );
 
