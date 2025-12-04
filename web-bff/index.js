@@ -80,10 +80,11 @@ app.get("/login", requireClient, (req, res) => {
     redirect_uri: redirectUri,
   });
 
-  res.set("Location", url);
-  const setCookie = res.getHeader("Set-Cookie");
-  console.log("LOGIN will send Set-Cookie header:", setCookie);
-  res.status(302).end();
+  res.on("finish", () => {
+    console.log("LOGIN setn Set-Cookie headoer:", res.getHeader("Set-Cookie"));
+  });
+
+  res.redirect(url);
 });
 
 app.get("/callback", requireClient, async (req, res) => {
