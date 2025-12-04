@@ -1,5 +1,5 @@
 import express from "express";
-import session from "cookie-session";
+import expressSession from "express-session";
 import dotenv from "dotenv";
 import { Issuer, generators } from "openid-client";
 import https from "https";
@@ -17,14 +17,17 @@ const app = express();
 app.set("trust proxy", true);
 
 app.use(
-  session({
+  expressSession({
     name: "session",
-    keys: [process.env.SESSION_SECRET || "secret"],
-    maxAge: 24 * 60 * 60 * 1000,
-
-    secure: true,
-    sameSite: "none",
-    httpOnly: true,
+    secret: [process.env.SESSION_SECRET || "secret"],
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
+        secure: true,
+        httpOnly: true,
+        sameSite: "none",
+    },
   })
 );
 
