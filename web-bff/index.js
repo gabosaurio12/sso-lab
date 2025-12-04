@@ -27,7 +27,7 @@ app.use(
         maxAge: 24 * 60 * 60 * 1000,
         secure: true,
         httpOnly: true,
-        sameSite: "none",
+        sameSite: "lax",
     },
   })
 );
@@ -127,7 +127,7 @@ app.get("/callback", requireClient, async (req, res) => {
     delete req.session.oidc_state;
     delete req.session.oidc_nonce;
 
-    res.redirect("/api/perfil");
+    res.redirect("/perfil");
   } catch (err) {
     console.error("Error en /callback:", err);
     res.status(500).send("Callback error: " + (err.message || err.toString()));
@@ -139,17 +139,32 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use("/api/perfil", perfilRouter);
+app.use("/api", perfilRouter);
 
-app.get("/logout", (req, res) => {
-  req.session = null;
-  res.send("Sesión cerrada localmente. Para logout completo en el IdP implementa end_session_endpoint.");
+app.get("/perfil", requireClient, (req, res) => {
+  if (!req.session.tokens) {
+    return res.status(401).send("No autenticado. Ve a <a href='/login'>/login</a>");
+  }
+
+  const idToken = req.session.tokens.id_token;
+  const parts = idToken.split(".");
+  const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
+
+  res.send(`
+    <h1>Perfil</h1>
+    <pre>${JSON.stringify(payload, null, 2)}</pre>
+    <a href='/logout'>Logout</a>
+  `);
 });
 
-const PORT = Number(process.env.PORT || 3000);
-
-initOidcClient().then(() => {
-    https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
-            console.log(`HTTPS BFF ready at https://${process.env.HOST}:${PORT}`);
-    });
+app.get("/logout", requireClient, async (req, res) => {
+  const idToken = req.session.tokens?.id_token;
+  req.session = null;
+  
+  if (idToken && client.issuer.metadata.end_session_endpoint) {
+    const endSessionUrl = `${client.issuer.metadata.end_session_endpoint}?id_token_hint=${idToken}`;
+    return res.redirect(endSessionUrl);
+  }
+  
+  res.send("Sesión cerrada.");
 });
