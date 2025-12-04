@@ -1,9 +1,12 @@
+// web-bff/index.js
 import express from "express";
 import session from "cookie-session";
 import dotenv from "dotenv";
-import { Issuer, generators } from "openid-client";
+import * as oidc from "openid-client";
 
 dotenv.config();
+
+const { Issuer, generators } = oidc;
 
 const app = express();
 
@@ -15,66 +18,116 @@ app.use(
   })
 );
 
+let issuer;
 let client;
-let codeVerifier;
-let codeChallenge;
 
-async function setupClient() {
-  const keycloak = await Issuer.discover(process.env.ISSUER);
-  client = new keycloak.Client({
-    client_id: process.env.CLIENT_ID,
-    token_endpoint_auth_method: "none",
-  });
+async function initOidcClient() {
+  try {
+    issuer = await Issuer.discover(process.env.ISSUER);
+    // Crear el client; al ser public client usamos token_endpoint_auth_method: 'none'
+    client = new issuer.Client({
+      client_id: process.env.CLIENT_ID,
+      token_endpoint_auth_method: "none",
+    });
+    console.log("OIDC issuer descubierto y client creado:", issuer.issuer);
+  } catch (err) {
+    console.error("Error inicializando OIDC client:", err);
+    process.exit(1);
+  }
 }
 
-setupClient();
+// Middleware para esperar a que el client esté listo
+async function requireClient(req, res, next) {
+  if (!client) {
+    await initOidcClient();
+  }
+  next();
+}
 
-app.get("/login", async (req, res) => {
-  codeVerifier = generators.codeVerifier();
-  codeChallenge = generators.codeChallenge(codeVerifier);
+app.get("/login", requireClient, (req, res) => {
+  // generar code_verifier y code_challenge y guardarlos en la sesión
+  const code_verifier = generators.codeVerifier();
+  const code_challenge = generators.codeChallenge(code_verifier);
+
+  // guarda el code_verifier en la sesión
+  req.session.code_verifier = code_verifier;
+
+  const redirectUri = `http://${process.env.HOST}:${process.env.PORT}/callback`;
 
   const url = client.authorizationUrl({
     scope: "openid profile email",
-    code_challenge: codeChallenge,
+    code_challenge,
     code_challenge_method: "S256",
-    redirect_uri: `http://${process.env.HOST}:3000/callback`,
+    redirect_uri: redirectUri,
+    // puedes añadir state si quieres: state: generators.random(),
   });
 
   res.redirect(url);
 });
 
-app.get("/callback", async (req, res) => {
-  const params = client.callbackParams(req);
+app.get("/callback", requireClient, async (req, res) => {
+  try {
+    const params = client.callbackParams(req);
+    const redirectUri = `http://${process.env.HOST}:${process.env.PORT}/callback`;
+    const code_verifier = req.session.code_verifier;
+    if (!code_verifier) return res.status(400).send("Missing code_verifier in session");
 
-  const tokenSet = await client.callback(
-    `http://${process.env.HOST}:3000/callback`,
-    params,
-    {
-      code_verifier: codeVerifier,
-    }
-  );
+    const tokenSet = await client.callback(redirectUri, params, {
+      code_verifier,
+    });
 
-  req.session.tokens = tokenSet;
-  res.redirect("/me");
+    // guarda tokens en la sesión (ten en cuenta tamaño y seguridad para el lab)
+    req.session.tokens = {
+      id_token: tokenSet.id_token,
+      access_token: tokenSet.access_token,
+      refresh_token: tokenSet.refresh_token,
+    };
+
+    // borrar el code_verifier (solo se usa una vez)
+    delete req.session.code_verifier;
+
+    res.redirect("/me");
+  } catch (err) {
+    console.error("Error en /callback:", err);
+    res.status(500).send("Callback error: " + (err.message || err.toString()));
+  }
 });
 
-app.get("/me", async (req, res) => {
-  if (!req.session.tokens) return res.send("No estás logueado");
+app.get("/me", requireClient, async (req, res) => {
+  try {
+    if (!req.session.tokens || !req.session.tokens.access_token) {
+      return res.status(401).send("No estás autenticado. Ve a /login");
+    }
 
-  const userinfo = await client.userinfo(req.session.tokens.access_token);
+    // usa userinfo si el issuer lo soporta
+    let userinfo = {};
+    try {
+      userinfo = await client.userinfo(req.session.tokens.access_token);
+    } catch (e) {
+      // si falla userinfo, igual mostramos los claims del id_token (decodificar si quieres)
+      console.warn("No se pudo obtener userinfo:", e.message || e);
+    }
 
-  res.json({
-    id_token: req.session.tokens.id_token,
-    access_token: req.session.tokens.access_token,
-    userinfo: userinfo,
-  });
+    res.json({
+      id_token: req.session.tokens.id_token,
+      access_token: req.session.tokens.access_token,
+      userinfo,
+    });
+  } catch (err) {
+    console.error("Error en /me:", err);
+    res.status(500).send("Error interno");
+  }
 });
 
 app.get("/logout", (req, res) => {
   req.session = null;
-  res.send("Sesión cerrada");
+  res.send("Sesión cerrada localmente. Para logout completo en el IdP implementa end_session_endpoint.");
 });
 
-app.listen(process.env.PORT, () => {
-  console.log("BFF listening on port", process.env.PORT);
+const PORT = Number(process.env.PORT || 3000);
+
+initOidcClient().then(() => {
+  app.listen(PORT, () => {
+    console.log(`BFF escuchando en http://${process.env.HOST}:${PORT}`);
+  });
 });
