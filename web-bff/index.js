@@ -150,11 +150,7 @@ app.get("/perfil", requireClient, (req, res) => {
   const parts = idToken.split(".");
   const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
 
-  res.send(`
-    <h1>Perfil</h1>
-    <pre>${JSON.stringify(payload, null, 2)}</pre>
-    <a href='/logout'>Logout</a>
-  `);
+  res.render("perfil", { user: payload });
 });
 
 app.get("/logout", requireClient, async (req, res) => {
