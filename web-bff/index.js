@@ -168,3 +168,11 @@ app.get("/logout", requireClient, async (req, res) => {
   
   res.send("Sesión cerrada.");
 });
+
+const PORT = Number(process.env.PORT || 3000);
+
+initOidcClient().then(() => {
+    https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
+            console.log(`HTTPS BFF ready at https://${process.env.HOST}:${PORT}`);
+    });
+});
