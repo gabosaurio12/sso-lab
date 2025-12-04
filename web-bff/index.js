@@ -4,8 +4,7 @@ import dotenv from "dotenv";
 import { Issuer, generators } from "openid-client";
 import https from "https";
 import fs from "fs";
-
-const router = express.Router();
+import perfilRouter from "../api/perfil.js";
 
 const sslOptions = {
 		key: fs.readFileSync("./ssl/key.pem"),
@@ -134,6 +133,13 @@ app.get("/callback", requireClient, async (req, res) => {
     res.status(500).send("Callback error: " + (err.message || err.toString()));
   }
 });
+
+app.use((rqu, res, enxt) => {
+    req.client = client;
+    next();
+});
+
+app.use("/api", perfilRouter);
 
 app.get("/logout", (req, res) => {
   req.session = null;
