@@ -21,9 +21,10 @@ app.use(
     name: "session",
     keys: [process.env.SESSION_SECRET || "secret"],
     maxAge: 24 * 60 * 60 * 1000,
-    secure: false,
+
+    secure: true,
     sameSite: "none",
-    httpOnly: false,
+    httpOnly: true,
   })
 );
 
@@ -65,14 +66,16 @@ app.get("/login", requireClient, (req, res) => {
   // guarda el code_verifier en la sesión
   req.session.code_verifier = code_verifier;
 
-  const redirectUri = `https://${process.env.HOST}:${process.env.PORT}/callback`;
+  const protocol = req.protocol;
+  const host = req.get("host");
+  const redirectUri = `${protocol}://${host}/callback`;
+  console.log("LOGIN redirectUri=", redirectUri);
 
   const url = client.authorizationUrl({
     scope: "openid profile email",
     code_challenge,
     code_challenge_method: "S256",
     redirect_uri: redirectUri,
-    // puedes añadir state si quieres: state: generators.random(),
   });
 
   res.redirect(url);
@@ -80,8 +83,13 @@ app.get("/login", requireClient, (req, res) => {
 
 app.get("/callback", requireClient, async (req, res) => {
   try {
+    console.log("CALLBACK headers.cookie=", req.headers.cookie);
     const params = client.callbackParams(req);
-    const redirectUri = `https://${process.env.HOST}:${process.env.PORT}/callback`;
+
+    const protocol = req.protocol;
+    const host = req.get("host");
+    const redirectUri = `${protocol}://${host}/callback`;
+
     const code_verifier = req.session.code_verifier;
     if (!code_verifier) return res.status(400).send("Missing code_verifier in session");
 
