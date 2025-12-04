@@ -1,11 +1,11 @@
 import express from "express";
 import session from "cookie-session";
 import dotenv from "dotenv";
-import * as oidc from "openid-client";
+import * as OIDC from "openid-client";
 
 dotenv.config();
 
-const { Issuer, generators } = oidc;
+const {Issuer, generators } = OIDC;
 
 const app = express();
 
