@@ -1,4 +1,19 @@
-## Correr el proyecto
+# SSO Seguro en Express
+
+Este es el proyecto final de la Experiencia Educativa Aspectos de Seguridad, es un SSO Seguro en Express que muestra los datos de la cuenta.
+
+## Tecnologías usadaas
+- Nodejs
+- Express
+- Jwt
+- Idp (Keycloak)
+- Kali
+- ZAP
+
+## Notas
+- HTTPS puede ser detectado como "No seguro" por los navegdores porque se usó un certificado propio firmado (self-signed)
+
+## Pasos de ejecución
 
 ```
 ./init.sh
@@ -48,3 +63,8 @@ KEYCLOAK_ADMIN=admin KEYCLOAK_ADMIN_PASSWORD=admin \
 cd web-bff/
 node index.js
 ```
+
+### Uso del proyecto
+- Entrar por el navegador web a la dirección: _https://<ip-vm>:3000/login
+- Iniciar sesión con el usuario creado
+- Se deben mostrar sus datos
