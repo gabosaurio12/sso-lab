@@ -16,35 +16,71 @@ Fecha: 2025-11-19
 - **Validación del access token por `userinfo`**: la API integrada usa `client.userinfo(accessToken)` y devuelve el JSON resultante; no hay validación local de firma. 
 - **Canales actuales**: navegador↔BFF por HTTPS (certificados locales); BFF/API↔Keycloak según `ISSUER` (HTTP en este laboratorio). 
 ## 2.3 DFD (Data Flow Diagram) y fronteras de confianza
-```mermaid
+
 flowchart TD
-  subgraph Usuario
+
+  %% ============================
+  %% FRONTERA 1: USUARIO
+  %% ============================
+  subgraph F1["Frontera Usuario"]
     U[Browser]
   end
 
-  subgraph BFF[Web BFF (HTTPS :3000)]
-    APP[Express app
-/web-bff/index.js]
-    API[/Router /api/perfil
-(api/perfil.js)/]
+  %% ============================
+  %% FRONTERA 2: BFF (SERVIDOR SEGURO)
+  %% ============================
+  subgraph F2["Frontera BFF Entorno Confiable HTTPS"]
+    APP[App Express login callback perfil]
+    API[Router api perfil]
+    S[(Session Store PKCE tokens OIDC claims)]
+    JWK[(JWKS firma JWT app)]
   end
 
-  subgraph IdP[Keycloak (HTTP :8080)]
-    KC[Issuer OIDC]
+  %% ============================
+  %% FRONTERA 3: IDP (RED NO CONFIABLE)
+  %% ============================
+  subgraph F3["Frontera IdP Red No Confiable HTTP"]
+    KC[OIDC Provider]
   end
 
-  U -- "HTTPS GET /login, /callback, /perfil" --> APP
-  U -- "HTTPS GET /api/perfil\nAuthorization: Bearer AT" --> API
 
-  APP -- "HTTP OIDC discovery/auth/token" --> KC
-  API -- "HTTP userinfo(access_token)" --> KC
-```
+  %% Browser ↔ BFF
+  U -->| GET login con state y nonce| APP
+  APP -->|Guardar PKCE y state| S
+
+  U -->|GET callback con code y state| APP
+  APP -->|Token exchange HTTP| KC
+
+  APP -->|Guardar tokens y claims| S
+  APP -->|Emitir JWT app| U
+
+
+  %% Perfil
+  U -->|GET perfil con JWT app| APP
+  APP -->|Validar firma JWT| JWK
+
+
+  %% API protegida
+  U -->|GET api perfil con JWT app| API
+  API -->|Validar JWT app| JWK
+  API -->|Userinfo con AT| KC
+
+
+  %% Sesion
+  APP <-->|Acceso a sesion| S
+  API <-->|Acceso a sesion| S
+
+
+  %% Keycloak
+  APP -->|Discovery HTTP| KC
+  APP -->|Auth Request PKCE HTTP| KC
+  APP -->|Token Exchange HTTP| KC
+
 
 **Fronteras reales**
-- **Navegador ↔ BFF**: HTTPS con certificados locales (cookie `secure`, `httpOnly`, `sameSite=lax`).
-- **BFF/API ↔ IdP**: HTTP según `ISSUER` de entorno; sin cifrado en fase 1.
+- **Navegador ↔ BFF/API**: comunicación protegida mediante **HTTPS** con certificados locales; las cookies se envían con `secure`, `httpOnly` y `sameSite=lax`, y dentro de esta frontera el BFF puede emitir y validar **JWT de aplicación**.
+- **BFF/API ↔ IdP**: la conexión sigue el esquema definido en `ISSUER`; si es **HTTPS**, el flujo OIDC viaja cifrado, y si es **HTTP**, el intercambio de metadatos, códigos y tokens ocurre sin protección TLS.
 
-> Nota: no existe base de datos en el código actual; la única persistencia es la sesión en memoria.
 
 ## 2.4 Modelo de amenazas (STRIDE)
 | Categoría | Ejemplo en este sistema | Evidencia | Controles propuestos (basados en código actual) |
