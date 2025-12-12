@@ -52,8 +52,8 @@ KEYCLOAK_ADMIN=admin KEYCLOAK_ADMIN_PASSWORD=admin \
 		- PKCE method: S256
 	- Next
 	- Login settings
-		- Valid redirect URIs: https://<ip-vm>:3000/callback
-		- Web origins: https://<ip-vm:3000
+		- Valid redirect URIs: _https://<ip-vm>:3000/callback_
+		- Web origins: _https://<ip-vm:3000_
 5. En Users damos clic en Add user
 6. Creamos un usuario
 
