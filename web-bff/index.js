@@ -167,7 +167,21 @@ app.get("/logout", requireClient, async (req, res) => {
 const PORT = Number(process.env.PORT || 3000);
 
 initOidcClient().then(() => {
-    https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
-            console.log(`HTTPS BFF ready at https://${process.env.HOST}:${PORT}`);
+    https.createServer(
+      {
+        key: fs.readFileSync("./ssl/key.pem"),
+        cert: fs.readFileSync("./ssl/cert.pem"),
+        secureOptions:
+          constants.SSL_OP_NO_TLS1 |
+          constants.SSL_OP_NO_TLS1_1,
+        ciphers: [
+          "TLS_AES_256_GCM_SHA384",
+          "TLS_AES_128_GCM_SHA256",
+          "TLS_CHACHA20_POLY1305_SHA256"
+        ].join(":"),
+        honorCipherOrder: true
+      }, app
+    ).listen(PORT, "0.0.0.0", () => {
+      console.log(`HTTPS BFF ready at https://${process.env.HOST}:${PORT}`);
     });
 });
