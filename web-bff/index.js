@@ -5,6 +5,7 @@ import { Issuer, generators } from "openid-client";
 import https from "https";
 import fs from "fs";
 import perfilRouter from "../api/perfil.js";
+import { constants } from "crypto";
 
 const sslOptions = {
 		key: fs.readFileSync("./ssl/key.pem"),
