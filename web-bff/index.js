@@ -172,8 +172,8 @@ initOidcClient().then(() => {
         key: fs.readFileSync("./ssl/key.pem"),
         cert: fs.readFileSync("./ssl/cert.pem"),
         secureOptions:
-          constants.SSL_OP_NO_TLS1 |
-          constants.SSL_OP_NO_TLS1_1,
+          constants.SSL_OP_NO_TLSv1 |
+          constants.SSL_OP_NO_TLSv1_1,
         ciphers: [
           "TLS_AES_256_GCM_SHA384",
           "TLS_AES_128_GCM_SHA256",
