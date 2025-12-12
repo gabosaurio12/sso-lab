@@ -1,0 +1,30 @@
+- id: A1
+  nombre: "Identidad del usuario"
+  descripcion: "Credenciales en IdP y sesión mantenida en el BFF (cookie secure)."
+  propietario: "Equipo docente / alumno"
+  criticidad: "Alta"
+  notas_proteccion: "Mantener cookie httpOnly+secure; validar state/nonce y finalizar sesión en logout."
+- id: A2
+  nombre: "Tokens OIDC (ID/Access/Refresh)"
+  descripcion: "Tokens emitidos por Keycloak y almacenados en la sesión tras el callback."
+  propietario: "Equipo docente / alumno"
+  criticidad: "Alta"
+  notas_proteccion: "Usar PKCE+state+nonce; evitar exponer tokens en logs; validar expiración y audiencia."
+- id: A3
+  nombre: "Datos personales básicos"
+  descripcion: "Atributos del usuario (nombre, email) recibidos del IdP y renderizados en la vista de perfil."
+  propietario: "Equipo docente / alumno"
+  criticidad: "Media"
+  notas_proteccion: "Limitar scopes a openid profile email; sanitizar representación en plantillas."
+- id: A4
+  nombre: "API protegida"
+  descripcion: "Endpoint /api/perfil que responde con userinfo consumiendo access token Bearer."
+  propietario: "Equipo docente / alumno"
+  criticidad: "Alta"
+  notas_proteccion: "Requiere Authorization Bearer; depende de validación del access token vía userinfo."
+- id: A5
+  nombre: "Infraestructura del laboratorio"
+  descripcion: "VM local con BFF Node.js y certificados PEM para HTTPS; red IP-only hacia Keycloak."
+  propietario: "Equipo docente / alumno"
+  criticidad: "Media"
+  notas_proteccion: "Proteger claves PEM; planificar migración a HTTPS completo (fase 2 con reverse proxy)."
