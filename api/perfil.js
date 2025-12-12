@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyJwt } from "./verifyJwt";
+import { verifyJwt } from "./verifyJwt.js";
 
 const router = express.Router();
 
