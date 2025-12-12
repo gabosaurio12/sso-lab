@@ -65,6 +65,6 @@ node index.js
 ```
 
 ### Uso del proyecto
-- Entrar por el navegador web a la dirección: _https://<ip-vm>:3000/login
+- Entrar por el navegador web a la dirección: _https://<ip-vm>:3000/login_
 - Iniciar sesión con el usuario creado
 - Se deben mostrar sus datos
