@@ -44,7 +44,6 @@ let client;
 async function initOidcClient() {
   try {
     issuer = await Issuer.discover(process.env.ISSUER);
-    // Crear el client; al ser public client usamos token_endpoint_auth_method: 'none'
     client = new issuer.Client({
       client_id: process.env.CLIENT_ID,
       token_endpoint_auth_method: "none",
@@ -56,7 +55,6 @@ async function initOidcClient() {
   }
 }
 
-// Middleware para esperar a que el client esté listo
 async function requireClient(req, res, next) {
   if (!client) {
     await initOidcClient();
@@ -65,7 +63,6 @@ async function requireClient(req, res, next) {
 }
 
 app.get("/login", requireClient, (req, res) => {
-  // generar code_verifier y code_challenge y guardarlos en la sesión
   const code_verifier = generators.codeVerifier();
   const code_challenge = generators.codeChallenge(code_verifier);
 

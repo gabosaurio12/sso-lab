@@ -1,8 +1,9 @@
 import express from "express";
+import { verifyJwt } from "./verifyJwt";
 
 const router = express.Router();
 
-router.get("/perfil", async (req, res) => {
+router.get("/perfil2", async (req, res) => {
     try {
         if (!req.client) {
             return res.status(500).json({ error: "OIDC client not initialized" });
@@ -26,6 +27,13 @@ router.get("/perfil", async (req, res) => {
         console.error("Error en api/perfil:", err);
         res.status(500).send("Error interno");
     }
+});
+
+router.get("/perfil", verifyJwt, (req, res) => {
+    res.json({
+        message: "OK",
+        user: req.user,
+    });
 });
 
 export default router;
