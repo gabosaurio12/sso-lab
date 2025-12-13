@@ -7,11 +7,6 @@ import fs from "fs";
 import perfilRouter from "../api/perfil.js";
 import { constants } from "crypto";
 
-const sslOptions = {
-		key: fs.readFileSync("./ssl/key.pem"),
-		cert: fs.readFileSync("./ssl/cert.pem"),
-};
-
 dotenv.config();
 
 const app = express();
