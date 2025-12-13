@@ -143,6 +143,7 @@ app.use("/api", perfilRouter);
 
 app.get("/perfil", requireClient, (req, res) => {
   if (!req.session.tokens) {
+	req.session = null;
     return res.status(401).send("No autenticado. Ve a <a href='/login'>/login</a>");
   }
 
