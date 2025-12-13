@@ -1,22 +1,70 @@
-== Correr el proyecto
+# SSO Seguro en Express
 
-=== Keycloak
+Este es el proyecto final de la Experiencia Educativa Aspectos de Seguridad, es un SSO Seguro en Express que muestra los datos de la cuenta.
+
+## Tecnologías usadaas
+- Nodejs
+- Express
+- Jwt
+- Idp (Keycloak)
+- Kali
+- ZAP
+
+## Notas
+- HTTPS puede ser detectado como "No seguro" por los navegdores porque se usó un certificado propio firmado (self-signed)
+
+## Pasos de ejecución
+
 ```
-cd /opt/
-wget https://github.com/keycloak/keycloak/releases/download/26.4.6/keycloak-26.4.6.zip
-unzip keycloak-26.4.6.zip && mv keycloak-26.4.6.zip keycloak
-sudo chown -R $USER:$USER /opt/keycloak
-chmod -R 755 /opt/keycloak
+./init.sh
+```
+
+### Keycloak
+```
 KEYCLOAK_ADMIN=admin KEYCLOAK_ADMIN_PASSWORD=admin \
 /opt/keycloak/bin/kc.sh start-dev \
   --http-port=8080 \
-  --hostname=<LA_IP_DE_TU_VM> \
+  --hostname=<IP-VM> \
   --hostname-strict=false
 ```
+#### Pasos para crear el realm
 
-=== BFF
+1. Iniciar sesión como admin en Keycloak
+2. Vamos a Manage Realms
+3. Damos clic en Create Realm
+- Name: demo
+- Clic en create
+4. Dentro de realm demo:
+- Clic en Clients
+- Clic en Create client
+- Llenamos:
+	- Client type: OpenID Connect
+	- Client ID: web-app
+	- Name: Web App BFF
+	- Enabled: On
+	- Next
+	- Capability config
+		- Client authentication: Off
+		- Standard flow: On
+		- Direct access grants: Off
+		- Service accounts: Off
+		- PKCE: ON
+		- PKCE method: S256
+	- Next
+	- Login settings
+		- Valid redirect URIs: _https://<ip-vm>:3000/callback_
+		- Web origins: _https://<ip-vm:3000_
+5. En Users damos clic en Add user
+6. Creamos un usuario
+
+### BFF
 
 ```
 cd web-bff/
 node index.js
 ```
+
+### Uso del proyecto
+- Entrar por el navegador web a la dirección: _https://<ip-vm>:3000/login_
+- Iniciar sesión con el usuario creado
+- Se deben mostrar sus datos

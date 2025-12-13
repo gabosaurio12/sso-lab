@@ -12,32 +12,67 @@
 - **Protecciones de flujo de autorización**: `/login` aplica PKCE (S256), `state` y `nonce`, almacenando los valores en sesión y reusándolos en `/callback` para el canje del código, lo que refuerza la resistencia a ataques de replay y CSRF.
 - **Servidor unificado BFF + API**: el router `/api/perfil` se monta en el mismo proceso Express, beneficiándose de la sesión y de la inicialización compartida del cliente OIDC.
 - **Exposición segura al usuario**: la aplicación se publica mediante `https.createServer` usando los certificados locales, proporcionando cifrado de extremo a extremo hacia el navegador.
-#### 2.3 DFD (Mermaid)
-```mermaid
+#### 2.3 DFD ya con fronteras de confianza (Mermaid)
 flowchart TD
-  subgraph Usuario
+
+  %% ============================
+  %% FRONTERA 1: USUARIO
+  %% ============================
+  subgraph F1["Frontera Usuario"]
     U[Browser]
   end
 
-  subgraph BFF["BFF + API (HTTPS puerto configurado)"]
-    APP[Express app
-/web-bff/index.js]
-    API[/Router /api/perfil
-api/perfil.js/]
+  %% ============================
+  %% FRONTERA 2: BFF (SERVIDOR SEGURO)
+  %% ============================
+  subgraph F2["Frontera BFF Entorno Confiable HTTPS"]
+    APP[App Express login callback perfil]
+    API[Router api perfil]
+    S[(Session Store PKCE tokens OIDC claims)]
+    JWK[(JWKS firma JWT app)]
   end
 
-  subgraph IdP["Proveedor OIDC (${ISSUER})"]
-    KC[Discovery/Authorization/Token/UserInfo]
+  %% ============================
+  %% FRONTERA 3: IDP (RED NO CONFIABLE)
+  %% ============================
+  subgraph F3["Frontera IdP Red No Confiable HTTP"]
+    KC[OIDC Provider]
   end
 
-  U -- HTTPS GET /login,/callback,/perfil --> APP
-  U -- HTTPS GET /api/perfil + Bearer AT --> API
 
-  APP -- Discovery/Auth/Token/UserInfo (según ${ISSUER}) --> KC
-  API -- UserInfo(access_token) --> KC
-```
+  %% Browser ↔ BFF
+  U -->| GET login con state y nonce| APP
+  APP -->|Guardar PKCE y state| S
 
-**Fronteras de confianza**: cifrado TLS entre el usuario y el BFF/API gracias al servidor HTTPS local; la conexión al IdP seguirá el esquema definido en `ISSUER`, que puede ser HTTPS si así se configura.
+  U -->|GET callback con code y state| APP
+  APP -->|Token exchange HTTP| KC
+
+  APP -->|Guardar tokens y claims| S
+  APP -->|Emitir JWT app| U
+
+
+  %% Perfil
+  U -->|GET perfil con JWT app| APP
+  APP -->|Validar firma JWT| JWK
+
+
+  %% API protegida
+  U -->|GET api perfil con JWT app| API
+  API -->|Validar JWT app| JWK
+  API -->|Userinfo con AT| KC
+
+
+  %% Sesion
+  APP <-->|Acceso a sesion| S
+  API <-->|Acceso a sesion| S
+
+
+  %% Keycloak
+  APP -->|Discovery HTTP| KC
+  APP -->|Auth Request PKCE HTTP| KC
+  APP -->|Token Exchange HTTP| KC
+
+**Fronteras de confianza**: El canal entre el usuario y el BFF/API está protegido mediante cifrado TLS, proporcionado por el servidor HTTPS local. La comunicación entre el BFF y el IdP depende del valor configurado en ISSUER: si este apunta a un endpoint HTTPS, el intercambio con el IdP estará cifrado; de lo contrario, se realizará sobre HTTP sin protección criptográfica.
 
 #### 2.4 STRIDE (amenazas aplicables)
 - **Suplantación**: la API valida el `access_token` delegando en `client.userinfo(accessToken)`; mientras la llamada sea protegida por el esquema del `ISSUER`, se minimiza el riesgo de aceptar tokens fabricados.
